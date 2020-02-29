@@ -37,8 +37,8 @@ class AStarPlanner:
         def __init__(self, x, y, cost, pind):
             self.x = x  # index of grid
             self.y = y  # index of grid
-            self.cost = cost
-            self.pind = pind
+            self.cost = cost #每个点的h值一定的，所以这里的cost只是g值，即起点到这个点的代价
+            self.pind = pind # parent index
 
         def __str__(self):
             return str(self.x) + "," + str(self.y) + "," + str(self.cost) + "," + str(self.pind)
@@ -73,6 +73,9 @@ class AStarPlanner:
 
             c_id = min(
                 open_set, key=lambda o: open_set[o].cost + self.calc_heuristic(ngoal, open_set[o]))
+            #g = lambda x:x+1，lambda作为一个表达式，定义了一个匿名函数，上例的代码x为入口参数，x+1为函数体，用函数来表示为：
+            #def g(x):
+            #     return x+1
             current = open_set[c_id]
 
             # show graph
@@ -120,8 +123,9 @@ class AStarPlanner:
                         open_set[n_id] = node
 
         rx, ry = self.calc_final_path(ngoal, closed_set)
+        cx,cy=self.get_closet(closed_set)
 
-        return rx, ry
+        return rx, ry,cx,cy
 
     def calc_final_path(self, ngoal, closedset):
         # generate final course
@@ -142,6 +146,7 @@ class AStarPlanner:
         d = w * math.hypot(n1.x - n2.x, n1.y - n2.y)
         return d
 
+    #根据x或y的栅格坐标计算他在x或y方向上的实际坐标
     def calc_grid_position(self, index, minp):
         """
         calc grid position
@@ -153,12 +158,15 @@ class AStarPlanner:
         pos = index * self.reso + minp
         return pos
 
+    #计算坐标点的栅格坐标
     def calc_xyindex(self, position, min_pos):
         return round((position - min_pos) / self.reso)
 
+    #求出坐标点的栅格索引值index
     def calc_grid_index(self, node):
         return (node.y - self.miny) * self.xwidth + (node.x - self.minx)
 
+    #确定所给的节点在此地图范围内，
     def verify_node(self, node):
         px = self.calc_grid_position(node.x, self.minx)
         py = self.calc_grid_position(node.y, self.miny)
@@ -180,7 +188,7 @@ class AStarPlanner:
 
     def calc_obstacle_map(self, ox, oy):
 
-        self.minx = round(min(ox))
+        self.minx = round(min(ox))#返回浮点数的四舍五入
         self.miny = round(min(oy))
         self.maxx = round(max(ox))
         self.maxy = round(max(oy))
@@ -189,7 +197,7 @@ class AStarPlanner:
         print("maxx:", self.maxx)
         print("maxy:", self.maxy)
 
-        self.xwidth = round((self.maxx - self.minx) / self.reso)
+        self.xwidth = round((self.maxx - self.minx) / self.reso)#栅格数
         self.ywidth = round((self.maxy - self.miny) / self.reso)
         print("xwidth:", self.xwidth)
         print("ywidth:", self.ywidth)
@@ -201,13 +209,22 @@ class AStarPlanner:
             x = self.calc_grid_position(ix, self.minx)
             for iy in range(self.ywidth):
                 y = self.calc_grid_position(iy, self.miny)
-                for iox, ioy in zip(ox, oy):
-                    d = math.hypot(iox - x, ioy - y)
-                    if d <= self.rr:
+                for iox, ioy in zip(ox, oy):#zip将ox和oy中元素一一对应组队成tuple，放在list中
+                    d = math.hypot(iox - x, ioy - y)#返回所有参数的平方和的平方根
+                    if d <= self.rr:#遍历栅格地图内的所有点，如果这些点与障碍物的距离比车辆的半径小的话，则车辆不能到达这个点，则此点应该视为有障碍物，被占据
                         self.obmap[ix][iy] = True
                         break
+    @staticmethod               
+    def get_closet(closed_set):
+        cx=[]
+        cy=[]
+        for key in closed_set:
+            cx.append(closed_set[key].x)
+            cy.append(closed_set[key].y)
+        return cx ,cy
 
-    @staticmethod
+
+    @staticmethod#静态方法，不强制要求传递参数，对象可以直接调用这个函数
     def get_motion_model():
         # dx, dy, cost
         motion = [[1, 0, 1],
@@ -228,10 +245,10 @@ def main():
     # start and goal position
     sx = 10.0  # [m]
     sy = 10.0  # [m]
-    gx = 50.0  # [m]
-    gy = 50.0  # [m]
-    grid_size = 2.0  # [m]
-    robot_radius = 1.0  # [m]
+    gx = 55.0  # [m]
+    gy = -5.0  # [m]
+    grid_size = 1.0  # [m]
+    robot_radius = 4.0  # [m]
 
     # set obstable positions
     ox, oy = [], []
@@ -262,10 +279,11 @@ def main():
         plt.axis("equal")
 
     a_star = AStarPlanner(ox, oy, grid_size, robot_radius)
-    rx, ry = a_star.planning(sx, sy, gx, gy)
+    rx, ry ,cx,cy= a_star.planning(sx, sy, gx, gy)
 
     if show_animation:  # pragma: no cover
         plt.plot(rx, ry, "-r")
+        # plt.plot(cx,cy,'*')
         plt.show()
 
 

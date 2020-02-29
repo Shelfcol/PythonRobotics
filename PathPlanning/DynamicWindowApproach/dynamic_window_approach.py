@@ -71,17 +71,17 @@ class Config:
             raise TypeError("robot_type must be an instance of RobotType")
         self._robot_type = value
 
-
+#固定线速度和角速度预测车辆的运动，这里线速度和角速度恒定
 def motion(x, u, dt):
     """
     motion model
     """
 
-    x[2] += u[1] * dt
-    x[0] += u[0] * math.cos(x[2]) * dt
-    x[1] += u[0] * math.sin(x[2]) * dt
-    x[3] = u[0]
-    x[4] = u[1]
+    x[2] += u[1] * dt#yaw
+    x[0] += u[0] * math.cos(x[2]) * dt #x
+    x[1] += u[0] * math.sin(x[2]) * dt #y
+    x[3] = u[0]#速度
+    x[4] = u[1]#角速度
 
     return x
 
@@ -138,11 +138,11 @@ def calc_control_and_trajectory(x, dw, config, goal, ob):
     for v in np.arange(dw[0], dw[1], config.v_reso):
         for y in np.arange(dw[2], dw[3], config.yawrate_reso):
 
-            trajectory = predict_trajectory(x_init, v, y, config)
+            trajectory = predict_trajectory(x_init, v, y, config)#一系列的离散点
 
             # calc cost
-            to_goal_cost = config.to_goal_cost_gain * calc_to_goal_cost(trajectory, goal)
-            speed_cost = config.speed_cost_gain * (config.max_speed - trajectory[-1, 3])
+            to_goal_cost = config.to_goal_cost_gain * calc_to_goal_cost(trajectory, goal)#traj最后的点与goal的角度值与车辆朝向的夹角
+            speed_cost = config.speed_cost_gain * (config.max_speed - trajectory[-1, 3])#速度与最大速度的差距，因为速度越快越好
             ob_cost = config.obstacle_cost_gain * calc_obstacle_cost(trajectory, ob, config)
 
             final_cost = to_goal_cost + speed_cost + ob_cost
@@ -162,12 +162,18 @@ def calc_obstacle_cost(trajectory, ob, config):
     """
     ox = ob[:, 0]
     oy = ob[:, 1]
+    # print("*********")
+    # print(ox[:,None])
+    # print("**********")
     dx = trajectory[:, 0] - ox[:, None]
+    # print(dx)
+    # print(".............")
     dy = trajectory[:, 1] - oy[:, None]
-    r = np.hypot(dx, dy)
+    r = np.hypot(dx, dy)#返回欧氏距离
 
     if config.robot_type == RobotType.rectangle:
         yaw = trajectory[:, 2]
+ 
         rot = np.array([[np.cos(yaw), -np.sin(yaw)], [np.sin(yaw), np.cos(yaw)]])
         rot = np.transpose(rot, [2, 0, 1])
         local_ob = ob[:, None] - trajectory[:, 0:2]
@@ -193,12 +199,11 @@ def calc_to_goal_cost(trajectory, goal):
     """
         calc to goal cost with angle difference
     """
-
-    dx = goal[0] - trajectory[-1, 0]
+    dx = goal[0] - trajectory[-1, 0]#-1表示最后一个索引数据
     dy = goal[1] - trajectory[-1, 1]
     error_angle = math.atan2(dy, dx)
     cost_angle = error_angle - trajectory[-1, 2]
-    cost = abs(math.atan2(math.sin(cost_angle), math.cos(cost_angle)))
+    cost = abs(math.atan2(math.sin(cost_angle), math.cos(cost_angle)))#返回一个角度值
 
     return cost
 
@@ -265,6 +270,8 @@ def main(gx=10.0, gy=10.0, robot_type=RobotType.circle):
         u, predicted_trajectory = dwa_control(x, config, goal, ob)
         x = motion(x, u, config.dt)  # simulate robot
         trajectory = np.vstack((trajectory, x))  # store state history
+        # print("........")
+        # print(trajectory)
 
         if show_animation:
             plt.cla()
@@ -296,4 +303,4 @@ def main(gx=10.0, gy=10.0, robot_type=RobotType.circle):
 
 
 if __name__ == '__main__':
-    main(robot_type=RobotType.circle)
+    main(robot_type=RobotType.rectangle)

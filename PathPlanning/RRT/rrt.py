@@ -5,6 +5,19 @@ Path planning Sample Code with Randomized Rapidly-Exploring Random Trees (RRT)
 author: AtsushiSakai(@Atsushi_twi)
 
 """
+'''
+
+https://www.cnblogs.com/yunlongzhang/p/9265956.html
+通过随机采样，增加叶子节点的方式，生成一个随机扩展树，当随机树中的叶子节点包含了目标点或进入了目标区域，便可以在随机树中找到一条由树节点组成的从初始点到
+目标点的路径。
+
+RRT 是一种基于概率采样的搜索方法，它采用一种特殊的增量方式进行构造，这种方式能迅速缩短一个随机状态点与树的期望距离。该方法的特点是能够快速有效的搜索高维空间，
+通过状态空间的随机采样点，把搜索导向空白区域，从而寻找到一条从起始点到目标点的规划路径。它通过对状态空间中的采样点进行碰撞检测，避免了对空间的建模，能够有效的
+解决高维空间和复杂约束的路径规划问题。 RRT算法适合解决多自由度机器人在复杂环境下和动态环境中的路径规划问题[8]。与其他的随机路径规划方法相比， RRT 算法更适用于
+非完整约束和多自由度的系统中[9]
+
+'''
+
 
 import math
 import random
@@ -45,7 +58,7 @@ class RRT:
         """
         self.start = self.Node(start[0], start[1])
         self.end = self.Node(goal[0], goal[1])
-        self.min_rand = rand_area[0]
+        self.min_rand = rand_area[0]#？？？？？？？？？？？？？？？？？？
         self.max_rand = rand_area[1]
         self.expand_dis = expand_dis
         self.path_resolution = path_resolution
@@ -62,20 +75,21 @@ class RRT:
         """
 
         self.node_list = [self.start]
+
+        #规定了最大迭代次数
         for i in range(self.max_iter):
-            rnd_node = self.get_random_node()
-            nearest_ind = self.get_nearest_node_index(self.node_list, rnd_node)
-            nearest_node = self.node_list[nearest_ind]
+            rnd_node = self.get_random_node()#生成一个随机点，有5%的概率为终点，95%的概率在rand_area(整个地图中的点)之间
+            nearest_ind = self.get_nearest_node_index(self.node_list, rnd_node) # 从node_list列表中找到与rnd_node距离最近的点的index
+            nearest_node = self.node_list[nearest_ind]#获取node_list列表中与rnd_node距离最近的点
+            new_node = self.steer(nearest_node, rnd_node, self.expand_dis)#获得两点之间的间隔一定距离的点序列
 
-            new_node = self.steer(nearest_node, rnd_node, self.expand_dis)
-
-            if self.check_collision(new_node, self.obstacle_list):
+            if self.check_collision(new_node, self.obstacle_list):#对生成的新序列进行碰撞检测，如果不会碰到，则将这个点加入到node_list序列中
                 self.node_list.append(new_node)
 
             if animation and i % 5 == 0:
                 self.draw_graph(rnd_node)
 
-            if self.calc_dist_to_goal(self.node_list[-1].x, self.node_list[-1].y) <= self.expand_dis:
+            if self.calc_dist_to_goal(self.node_list[-1].x, self.node_list[-1].y) <= self.expand_dis:#如果这个点与终点距离小于expand_dist，且碰撞检测成功，表示得到了最终路径
                 final_node = self.steer(self.node_list[-1], self.end, self.expand_dis)
                 if self.check_collision(final_node, self.obstacle_list):
                     return self.generate_final_course(len(self.node_list) - 1)
@@ -88,22 +102,26 @@ class RRT:
     def steer(self, from_node, to_node, extend_length=float("inf")):
 
         new_node = self.Node(from_node.x, from_node.y)
-        d, theta = self.calc_distance_and_angle(new_node, to_node)
+        d, theta = self.calc_distance_and_angle(new_node, to_node)#计算两个点之间的角度和距离
 
         new_node.path_x = [new_node.x]
         new_node.path_y = [new_node.y]
 
+        #限定最大的扩展距离，
         if extend_length > d:
             extend_length = d
 
-        n_expand = math.floor(extend_length / self.path_resolution)
+        # 根据栅格地图的分辨率得到扩展格数
+        n_expand = math.floor(extend_length / self.path_resolution)#返回小于等于的一个最大整数
 
+        #根据栅格地图的扩展格数得到中间的每一个栅格坐标，存入new_node的path中
         for _ in range(n_expand):
             new_node.x += self.path_resolution * math.cos(theta)
             new_node.y += self.path_resolution * math.sin(theta)
             new_node.path_x.append(new_node.x)
             new_node.path_y.append(new_node.y)
 
+        # 此时的new_node与to_node的距离已经不足一个栅格，因为上一个for循环在持续更新他的坐标
         d, _ = self.calc_distance_and_angle(new_node, to_node)
         if d <= self.path_resolution:
             new_node.path_x.append(to_node.x)
@@ -129,9 +147,14 @@ class RRT:
         return math.hypot(dx, dy)
 
     def get_random_node(self):
-        if random.randint(0, 100) > self.goal_sample_rate:
-            rnd = self.Node(random.uniform(self.min_rand, self.max_rand),
+        #95%的概率会在给定的区域内生成新的数据，
+        if random.randint(0, 100) > self.goal_sample_rate:# random.randint(0, 100) 生成0-100范围内的整数
+
+            #生成的点的坐标范围在min_rand~max_rand之间
+            rnd = self.Node(random.uniform(self.min_rand, self.max_rand),# random.randint(0, 100)  生成0-100之间的实数
                             random.uniform(self.min_rand, self.max_rand))
+
+        # 5%的概率会直接生成终点值为随机迭代点
         else:  # goal point sampling
             rnd = self.Node(self.end.x, self.end.y)
         return rnd
@@ -166,6 +189,7 @@ class RRT:
         plt.plot(xl, yl, color)
 
     @staticmethod
+    #从node_list列表中找到与rnd_node距离最近的点的index
     def get_nearest_node_index(node_list, rnd_node):
         dlist = [(node.x - rnd_node.x) ** 2 + (node.y - rnd_node.y)
                  ** 2 for node in node_list]
@@ -174,6 +198,7 @@ class RRT:
         return minind
 
     @staticmethod
+    #检测树枝（即q_near和q_new之间的edge）是否处于自由空间，可以使用增量法或者等分法，这里采用的是增量法，挨个判断距离
     def check_collision(node, obstacleList):
 
         if node is None:
@@ -214,7 +239,7 @@ def main(gx=6.0, gy=10.0):
     # Set Initial parameters
     rrt = RRT(start=[0, 0],
               goal=[gx, gy],
-              rand_area=[-2, 15],
+              rand_area=[-2, 15],#这个搜索区域基本就是整张地图
               obstacle_list=obstacleList)
     path = rrt.planning(animation=show_animation)
 
