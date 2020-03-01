@@ -11,11 +11,11 @@ import math
 import matplotlib.pyplot as plt
 
 
-k = 0.1  # look forward gain
+k = 0.3  # look forward gain
 Lfc = 2.0  # look-ahead distance
 Kp = 1.0  # speed proportional gain
 dt = 0.1  # [s]
-L = 2.9  # [m] wheel base of vehicle
+L = 2.9  # [m] wheel base of vehicle，车身长度，即前后轴的距离
 
 
 show_animation = True
@@ -124,7 +124,7 @@ def pure_pursuit_control(state, trajectory, pind):
 
     alpha = math.atan2(ty - state.rear_y, tx - state.rear_x) - state.yaw
 
-    Lf = k * state.v + Lfc
+    Lf = k * state.v + Lfc#以速度做为前视距离控制器的系数，加一个常数防止速度为0的时候没有前视点
 
     delta = math.atan2(2.0 * L * math.sin(alpha) / Lf, 1.0)
 
@@ -150,9 +150,9 @@ def main():
     cx = np.arange(0, 50, 0.1)
     cy = [math.sin(ix / 5.0) * ix / 2.0 for ix in cx]
 
-    target_speed = 10.0 / 3.6  # [m/s]
+    target_speed = 15.0 / 3.6  # [m/s]
 
-    T = 100.0  # max simulation time
+    T = 500.0  # max simulation time
 
     # initial state
     state = State(x=-0.0, y=-3.0, yaw=0.0, v=0.0)
@@ -173,7 +173,7 @@ def main():
         states.append(time, state)
 
         if show_animation:  # pragma: no cover
-            plt.cla()
+            plt.cla()#删除上一幅图axes，保留figure
             # for stopping simulation with the esc key.
             plt.gcf().canvas.mpl_connect('key_release_event',
                     lambda event: [exit(0) if event.key == 'escape' else None])

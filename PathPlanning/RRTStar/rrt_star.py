@@ -4,6 +4,8 @@ Path planning Sample Code with RRT*
 
 author: Atsushi Sakai(@Atsushi_twi)
 
+https://blog.csdn.net/yuxuan20062007/article/details/88843690
+
 """
 
 import math

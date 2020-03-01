@@ -4,6 +4,23 @@ Dubins path planner sample code
 
 author Atsushi Sakai(@Atsushi_twi)
 
+https://blog.csdn.net/clong139/article/details/83014865
+博客里的公式与此中所用公式一样
+
+Dubins曲线是满足曲率约束和规定的始末端切线方向条件下连接二维平面两个点的最短路径，车辆只能前进
+人和路径可以由最大曲率（最小转弯半径）和直线段组成（两点之间的路径首先得存在）
+连接两点的最短路径将通过最大曲率的曲的圆弧和直线段的构成
+
+Vx=Vcos(theta)
+Vy=Vsin(theta)
+w
+
+最佳路径类型可以用与右转（R），左转（L）或驾驶’直（S）’的汽车类比来描述。
+最佳路径总是至少有六种类型之一：RSR，RSL，LSR，LSL，RLR，LRL。每次根据起始点对每条路径的代价进行计算比较，最终选出最佳的路径，其中要排除不满足条件的，比如有障碍物
+
+问题：Dubins间隔问题，即在初始点和终点指定了航向的间隔。 
+也就是说路径在初始点和终点处的切线方向被限制在指定的间隔内
+
 """
 import math
 
@@ -12,7 +29,7 @@ import numpy as np
 
 show_animation = True
 
-
+#将角度转换到0-2pi
 def mod2pi(theta):
     return theta - 2.0 * math.pi * math.floor(theta / 2.0 / math.pi)
 
@@ -31,11 +48,11 @@ def left_straight_left(alpha, beta, d):
     tmp0 = d + sa - sb
 
     mode = ["L", "S", "L"]
-    p_squared = 2 + (d * d) - (2 * c_ab) + (2 * d * (sa - sb))
+    p_squared = 2 + (d * d) - (2 * c_ab) + (2 * d * (sa - sb))#中间段距离平方
     if p_squared < 0:
         return None, None, None, mode
     tmp1 = math.atan2((cb - ca), tmp0)
-    t = mod2pi(-alpha + tmp1)
+    t = mod2pi(-alpha + tmp1)#转换到0-2pi
     p = math.sqrt(p_squared)
     q = mod2pi(beta - tmp1)
 
@@ -140,7 +157,7 @@ def dubins_path_planning_from_origin(end_x, end_y, end_yaw, curvature, step_size
     dx = end_x
     dy = end_y
     D = math.hypot(dx, dy)
-    d = D * curvature
+    d = D * curvature # 将转弯半径转为r = 1，这样处理可以直接使用弧度来表示路径的长度，可大大简化后续的计算工作
 
     theta = mod2pi(math.atan2(dy, dx))
     alpha = mod2pi(- theta)
@@ -230,6 +247,7 @@ def dubins_path_planning(sx, sy, syaw, ex, ey, eyaw, c, step_size=0.1):
     lpx, lpy, lpyaw, mode, clen = dubins_path_planning_from_origin(
         lex, ley, leyaw, c, step_size)
 
+    #将坐标系转换回去
     px = [math.cos(-syaw) * x + math.sin(-syaw)
           * y + sx for x, y in zip(lpx, lpy)]
     py = [- math.sin(-syaw) * x + math.cos(-syaw)
@@ -312,7 +330,7 @@ def plot_arrow(x, y, yaw, length=1.0, width=0.5, fc="r", ec="k"):  # pragma: no 
 def main():
     print("Dubins path planner sample start!!")
 
-    start_x = 1.0  # [m]
+    start_x = 3.0  # [m]
     start_y = 1.0  # [m]
     start_yaw = np.deg2rad(45.0)  # [rad]
 
@@ -320,7 +338,7 @@ def main():
     end_y = -3.0  # [m]
     end_yaw = np.deg2rad(-45.0)  # [rad]
 
-    curvature = 1.0
+    curvature = 0.2
 
     px, py, pyaw, mode, clen = dubins_path_planning(start_x, start_y, start_yaw,
                                                     end_x, end_y, end_yaw, curvature)
