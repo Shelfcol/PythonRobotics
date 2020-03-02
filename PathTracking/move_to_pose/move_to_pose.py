@@ -11,10 +11,10 @@ P. I. Corke, "Robotics, Vision & Control", Springer 2017, ISBN 978-3-319-54413-7
 
 import matplotlib.pyplot as plt
 import numpy as np
-from random import random
+from random import random #返回0.0-1.0
 
 # simulation parameters
-Kp_rho = 9
+Kp_rho = 1
 Kp_alpha = 15
 Kp_beta = -3
 dt = 0.01
@@ -53,14 +53,14 @@ def move_to_pose(x_start, y_start, theta_start, x_goal, y_goal, theta_goal):
         # from 0 rad to 2*pi rad with slight turn
 
         rho = np.hypot(x_diff, y_diff)
-        alpha = (np.arctan2(y_diff, x_diff)
-                 - theta + np.pi) % (2 * np.pi) - np.pi
-        beta = (theta_goal - theta - alpha + np.pi) % (2 * np.pi) - np.pi
+        # 将角度限制在[-pi,pi]  (angle+pi)%(2*pi)-pi
+        alpha = (np.arctan2(y_diff, x_diff)- theta + np.pi) % (2 * np.pi) - np.pi # 当前点与终点连线角度-当前点的运动方向角度之差  减法的顺序不能变
+        beta = (theta_goal - theta - alpha + np.pi) % (2 * np.pi) - np.pi # 目标点方向-当前点与终点连线的方位角度
 
-        v = Kp_rho * rho
-        w = Kp_alpha * alpha + Kp_beta * beta
+        v = Kp_rho * rho #速度由现在的点与终点的距离线性关系来控制
+        w = Kp_alpha * alpha + Kp_beta * beta #角速度由两个角度来进行线形控制，即当前点与终点连线角度和当前点的方位角之差以及与终点的方位角之差来控制
 
-        if alpha > np.pi / 2 or alpha < -np.pi / 2:
+        if alpha > np.pi / 2 or alpha < -np.pi / 2:#当前的运动方向与当前点和目标点连线成钝角的时候，车辆就需要倒退了
             v = -v
 
         theta = theta + w * dt
@@ -113,7 +113,7 @@ def transformation_matrix(x, y, theta):
 
 def main():
 
-    for i in range(5):
+    for i in range(2):
         x_start = 20 * random()
         y_start = 20 * random()
         theta_start = 2 * np.pi * random() - np.pi

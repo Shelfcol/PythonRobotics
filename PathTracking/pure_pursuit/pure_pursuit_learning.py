@@ -2,6 +2,8 @@
 https://blog.csdn.net/yuxuan20062007/article/details/80914439
 每次dt内状态（x，y，yaw，v）更新是利用这次的速度，以及与R得到的角速度，前轮转角delta，更新yaw角和x，y，v
 
+Pure pursuit是以后轴中心为基准点计算几何学公式，而Stanley是基于前轴中心为基准点计算几何学公式的。
+
 步骤：
 	1.确定初始状态（x,y,yaw,v)
 	2.根据纵向控制器得到加速度a，这里我们就用一个简单的P控制器，用速度差确定
@@ -25,7 +27,7 @@ Lfc = 2.0  # look-ahead distance，防止利用速度进行前视距离计算时
 Kp = 1.0  # speed proportional gain,纵向P控制的参数
 dt = 0.1  # [s] 时间参数
 L = 2.9  # [m] wheel base of vehicle，车身长度，即前后轴的距离
-
+max_steer = np.radians(30.0)  # [rad] max steering angle
 
 class pure_pursuit:
 	def __init__(self,cx,cy,target_speed,x,y,yaw,v):
@@ -46,6 +48,7 @@ class pure_pursuit:
 			self.v=v
 
 		def update(self,delta,a):
+			delta=np.clip(delta,-1*max_steer,max_steer)#将前轮转角限制在(-1*max_steer,max_steer)范围内
 			self.x=self.x+self.v*math.cos(self.yaw)*dt
 			self.y=self.y+self.v*math.sin(self.yaw)*dt
 			self.yaw=self.yaw+self.v/L*math.tan(delta)*dt
