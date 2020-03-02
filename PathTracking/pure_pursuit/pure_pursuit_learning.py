@@ -28,15 +28,15 @@ L = 2.9  # [m] wheel base of vehicle，车身长度，即前后轴的距离
 
 
 class pure_pursuit:
-	def __init__(self,cx,cy,k,Lfc,Kp,dt,L,target_speed):
+	def __init__(self,cx,cy,target_speed,x,y,yaw,v):
 		self.cx=cx# 跟踪路径
 		self.cy=cy
-		self.k=k
-		self.Lfc=Lfc
-		self.Kp=Kp
-		self.dt=dt
-		self.L=L
+		
 		self.target_speed=target_speed
+		self.init_x=x
+		self.init_y=y
+		self.init_yaw=yaw
+		self.init_v=v
 
 	class State:
 		def __init__(self,x,y,yaw,v):
@@ -46,10 +46,10 @@ class pure_pursuit:
 			self.v=v
 
 		def update(self,delta,a):
-			self.x=self.x+self.v*math.cos(self.yaw)*self.dt
-			self.y=self.y+self.v*math.sin(self.yaw)*self.dt
-			self.yaw=self.yaw+self.v/self.L*math.tan(delta)*self.dt
-			self.v=self.v+a*self.dt
+			self.x=self.x+self.v*math.cos(self.yaw)*dt
+			self.y=self.y+self.v*math.sin(self.yaw)*dt
+			self.yaw=self.yaw+self.v/L*math.tan(delta)*dt
+			self.v=self.v+a*dt
 
 
 	class States:
@@ -72,34 +72,95 @@ class pure_pursuit:
 
 	#横向控制，输入量为上一时刻的目标点的index
 	def pure_pursuit_control(self,state,pind):
-		ind=self.cal_nearest_target_point(state)
+		ind,ld=self.cal_nearest_target_point(state)
+		if ind<pind:
+			ind=pind#????h有可能此时的转向还没有转过来，没有能朝向前进的方向，如果直接用ind，则车辆可能发生倒车
+		alpha=math.atan2(cy[ind]-state.y,cx[ind]-state.x)-state.yaw
 
+		if state.v<0:
+			alpha=math.pi-alpha
+
+		delta=math.atan2(2*L*math.sin(alpha)/ld,1)
+		return ind,delta
+	
 	def cal_nearest_target_point(self,state):
 
 		#搜索目标路径上与此事状态最近的点
 		dx=[ state.x-i for i in cx]
 		dy=[ state.y-i for i in cy]
-		dist=[math.hypot(i,j) for (i,j) in zip(cx,cy)]
+		dist=[math.hypot(i,j) for (i,j) in zip(dx,dy)]
 		nearest_index=dist.index(min(dist))
 
 		#用速度生成前视距离
-		ld=self.k*state.v+self.Lfc
+		ld=k*state.v+Lfc
 
 		d=0
 		ind=nearest_index
+		#当前点与路径上的目标点的距离之和等于生成的前视距离
 		while d<ld and ind<len(self.cx)-1:
 			d+=math.hypot(self.cx[ind]-self.cx[ind+1],self.cy[ind]-self.cy[ind+1])
 			ind+=1
+		return ind,ld
 
+	def main(self):
+		state=self.State(self.init_x,self.init_y,self.init_yaw,self.init_v)#初始状态
+		states=self.States()
+		t=0.0
+		states.append(t,state)
+		max_iter_T=100
+		ind,_=self.cal_nearest_target_point(state)
+		# print(ind,"222")
 
+		while  t<max_iter_T:
+			if ind==len(self.cx)-1:
+				break
+			a=self.vertical_control(self.target_speed,state.v)
+			ind,delta=self.pure_pursuit_control(state,ind)
+			t+=dt
+			state.update(delta,a)
+			states.append(t,state)
 
+			plt.cla()#删除上一幅图axes，保留figure
+			# for stopping simulation with the esc key.
+			plt.gcf().canvas.mpl_connect('key_release_event',
+				lambda event: [exit(0) if event.key == 'escape' else None])
+			self.plot_arrow(state.x, state.y, state.yaw)
+			plt.plot(cx, cy, "-r", label="course")
+			plt.plot(states.x, states.y, "-b", label="trajectory")
+			plt.plot(cx[ind], cy[ind], "xg", label="target")
+			plt.axis("equal")
+			plt.grid(True)
+			plt.title("Speed[km/h]:" + str(state.v * 3.6)[:4])
+			plt.pause(0.001)
 
-	def main():
-		state=self.state(x,y,yaw,v)#初始状态
-		states=self.States(0,state)
+		plt.cla()
+		plt.plot(cx, cy, ".r", label="course")
+		plt.plot(states.x, states.y, "-b", label="trajectory")
+		plt.legend()
+		plt.xlabel("x[m]")
+		plt.ylabel("y[m]")
+		plt.axis("equal")
+		plt.grid(True)
 
+		plt.subplots(1)
+		plt.plot(states.t, [iv * 3.6 for iv in states.v], "-r")
+		plt.xlabel("Time[s]")
+		plt.ylabel("Speed[km/h]")
+		plt.grid(True)
+		plt.show()
 
+	def plot_arrow(x, y, yaw, length=1.0, width=0.5, fc="r", ec="k"):
+		"""
+		Plot arrow
+		"""
 
+		if not isinstance(x, float):
+			for ix, iy, iyaw in zip(x, y, yaw):
+				plot_arrow(ix, iy, iyaw)
+		else:
+			plt.arrow(x, y, length * math.cos(yaw), length * math.sin(yaw),
+						fc=fc, ec=ec, head_width=width, head_length=width)
+			plt.plot(x, y)
 
 
 if __name__ == '__main__':
@@ -108,6 +169,12 @@ if __name__ == '__main__':
 	plt.plot(cx,cy,'-b')
 	target_speed = 15.0 / 3.6  # [m/s]
 
-	T = 500.0  # max simulation time
+	
+	x=-0.0
+	y=-3.0
+	yaw=0.0
+	v=0.0
+	pure_pursuit=pure_pursuit(cx,cy,target_speed,x,y,yaw,v)
+	pure_pursuit.main()
 
 	# initial state
