@@ -87,7 +87,7 @@ def stanley_control(state, cx, cy, cyaw, last_target_idx):
     :param last_target_idx: (int)
     :return: (float, int)
     """
-    current_target_idx, error_front_axle = calc_target_index(state, cx, cy)
+    current_target_idx, error_front_axle ,min_dist= calc_target_index(state, cx, cy)
 
     if last_target_idx >= current_target_idx:
         current_target_idx = last_target_idx
@@ -99,7 +99,7 @@ def stanley_control(state, cx, cy, cyaw, last_target_idx):
     # Steering control
     delta = theta_e + theta_d
 
-    return delta, current_target_idx
+    return delta, current_target_idx,min_dist
 
 
 def normalize_angle(angle):
@@ -144,7 +144,7 @@ def calc_target_index(state, cx, cy):
 
 
 
-    return target_idx, error_front_axle
+    return target_idx, error_front_axle,d[target_idx]
 
 
 def main():
@@ -170,11 +170,13 @@ def main():
     yaw = [state.yaw]
     v = [state.v]
     t = [0.0]
-    target_idx, _ = calc_target_index(state, cx, cy)
+    target_idx, _,min_dist= calc_target_index(state, cx, cy)
+
+    dist=[min_dist]
 
     while max_simulation_time >= time and last_idx > target_idx:
         ai = pid_control(target_speed, state.v)
-        di, target_idx = stanley_control(state, cx, cy, cyaw, target_idx)
+        di, target_idx,min_dist = stanley_control(state, cx, cy, cyaw, target_idx)
         state.update(ai, di)
 
         time += dt
@@ -184,7 +186,7 @@ def main():
         yaw.append(state.yaw)
         v.append(state.v)
         t.append(time)
-
+        dist.append(min_dist)
         if show_animation:  # pragma: no cover
             plt.cla()
             # for stopping simulation with the esc key.
@@ -214,6 +216,12 @@ def main():
         plt.plot(t, [iv * 3.6 for iv in v], "-r")
         plt.xlabel("Time[s]")
         plt.ylabel("Speed[km/h]")
+        plt.grid(True)
+
+        plt.subplots(1)
+        plt.plot(t, dist, "-r")
+        plt.xlabel("Time[s]")
+        plt.ylabel("dist[m]")
         plt.grid(True)
         plt.show()
 
