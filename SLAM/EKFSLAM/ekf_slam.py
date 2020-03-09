@@ -190,7 +190,7 @@ def jacob_h(q, delta, x, i):
 
     return H
 
-
+#角度范围-pi~pi
 def pi_2_pi(angle):
     return (angle + math.pi) % (2 * math.pi) - math.pi
 

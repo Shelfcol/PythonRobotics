@@ -33,8 +33,15 @@ max_steer = np.radians(30.0)  # [rad] max steering angle
 max_a=3.0 #最大加速度
 max_w=np.radians(60.0)#最大角速度
 
-global print_time
-print_time=0
+
+#为了画车辆需要的参数
+U_A_MAX = 1.0
+U_OMEGA_MAX = math.radians(45.0)
+PHI_V = 0.01
+PHI_OMEGA = 0.01
+WB = 0.25  # [m] wheel base
+
+
 
 class stanley_controller:
 	def __init__(self,cx,cy,target_speed,x,y,yaw,v):
@@ -155,22 +162,76 @@ class stanley_controller:
 
 	@staticmethod
 	def normalize_angle(angle):
-
-  
-		# while angle > np.pi:
-		# 	angle -= 2.0 * np.pi
-
-		# while angle < -np.pi:
-		# 	angle += 2.0 * np.pi
-
-		# return angle
-
 		# Normalize an angle to [-pi, pi].
 		return (angle+math.pi)%(2*math.pi)-math.pi
 
-	# @staticmethod
-	# def normalize_angle_0_2pi(angle):
-	# 	return (angle+math.pi)%(2*math.pi)
+	'''
+	def plot_car(x, y, yaw, steer=0.0, cabcolor="-r", truckcolor="-k"):  # pragma: no cover
+
+		# Vehicle parameters
+
+		LENGTH = 0.4  # [m]
+		WIDTH = 0.2  # [m]
+		BACKTOWHEEL = 0.1  # [m]
+		WHEEL_LEN = 0.03  # [m]
+		WHEEL_WIDTH = 0.02  # [m]
+		TREAD = 0.07  # [m]
+
+		outline = np.array([[-BACKTOWHEEL, (LENGTH - BACKTOWHEEL), (LENGTH - BACKTOWHEEL),
+							-BACKTOWHEEL, -BACKTOWHEEL],
+							[WIDTH / 2, WIDTH / 2, - WIDTH / 2, -WIDTH / 2, WIDTH / 2]])
+
+		fr_wheel = np.array([[WHEEL_LEN, -WHEEL_LEN, -WHEEL_LEN, WHEEL_LEN, WHEEL_LEN],
+							[-WHEEL_WIDTH - TREAD, -WHEEL_WIDTH - TREAD, WHEEL_WIDTH -
+							TREAD, WHEEL_WIDTH - TREAD, -WHEEL_WIDTH - TREAD]])
+
+		rr_wheel = np.copy(fr_wheel)
+
+		fl_wheel = np.copy(fr_wheel)
+		fl_wheel[1, :] *= -1
+		rl_wheel = np.copy(rr_wheel)
+		rl_wheel[1, :] *= -1
+
+		Rot1 = np.array([[math.cos(yaw), math.sin(yaw)],
+						[-math.sin(yaw), math.cos(yaw)]])
+		Rot2 = np.array([[math.cos(steer), math.sin(steer)],
+						[-math.sin(steer), math.cos(steer)]])
+
+		fr_wheel = (fr_wheel.T.dot(Rot2)).T
+		fl_wheel = (fl_wheel.T.dot(Rot2)).T
+		fr_wheel[0, :] += WB
+		fl_wheel[0, :] += WB
+
+		fr_wheel = (fr_wheel.T.dot(Rot1)).T
+		fl_wheel = (fl_wheel.T.dot(Rot1)).T
+
+		outline = (outline.T.dot(Rot1)).T
+		rr_wheel = (rr_wheel.T.dot(Rot1)).T
+		rl_wheel = (rl_wheel.T.dot(Rot1)).T
+
+		outline[0, :] += x
+		outline[1, :] += y
+		fr_wheel[0, :] += x
+		fr_wheel[1, :] += y
+		rr_wheel[0, :] += x
+		rr_wheel[1, :] += y
+		fl_wheel[0, :] += x
+		fl_wheel[1, :] += y
+		rl_wheel[0, :] += x
+		rl_wheel[1, :] += y
+
+		plt.plot(np.array(outline[0, :]).flatten(),
+				np.array(outline[1, :]).flatten(), truckcolor)
+		plt.plot(np.array(fr_wheel[0, :]).flatten(),
+				np.array(fr_wheel[1, :]).flatten(), truckcolor)
+		plt.plot(np.array(rr_wheel[0, :]).flatten(),
+				np.array(rr_wheel[1, :]).flatten(), truckcolor)
+		plt.plot(np.array(fl_wheel[0, :]).flatten(),
+				np.array(fl_wheel[1, :]).flatten(), truckcolor)
+		plt.plot(np.array(rl_wheel[0, :]).flatten(),
+				np.array(rl_wheel[1, :]).flatten(), truckcolor)
+		plt.plot(x, y, "*")
+	'''
 
 	def main(self):
 		state=self.State(self.init_x,self.init_y,self.init_yaw,self.init_v)#初始状态
@@ -202,7 +263,7 @@ class stanley_controller:
 			# for stopping simulation with the esc key.
 			plt.gcf().canvas.mpl_connect('key_release_event',
 				lambda event: [exit(0) if event.key == 'escape' else None])
-
+			# self.plot_car(state.x,state.y,state.yaw)
 			# self.plot_arrow(state.x, state.y, state.yaw)
 			plt.plot(cx, cy, "-r", label="course")
 			plt.plot(states.x, states.y, "-b", label="trajectory")
