@@ -3,6 +3,7 @@
 import matplotlib.pyplot as plt
 from matplotlib.pyplot import MultipleLocator
 import numpy as np
+import math
 #从pyplot导入MultipleLocator类，这个类用于设置刻度间隔
 
 #保存xy坐标点的list全局变量
@@ -11,74 +12,8 @@ global Y_all
 
 X_all=[]
 Y_all=[]
-#根据两个点得到中间的像素坐标，并返回坐标列表,现在还有三四象限的有点问题!!!!!!!!!
-def bresenham(x0,y0,x1,y1):
-
-	#将整个坐标系分成八份，从x轴开始，逆时针为1-8
-	#这里的某个坐标系的线不是指首尾两个点所在的象限位置，而是指两点组成的向量所指的区间
-	#将y轴左边的对称过来，只需要解决1278区间 dx>0
-
-	if x0>x1:
-		tmp=x0
-		x0=x1
-		x1=tmp
-		tmp=y1
-		y1=y0
-		y0=tmp
 
 
-	dx=x1-x0
-	dy=y1-y0
-
-
-	k=1#将dy的两种情况区分出来
-	#当dy<0,即将y翻上去,则可以将78区间的计算合并到12区间
-	if dy<0:
-		k=-1
-
-	dy=k*dy
-
-	x=[]#保存生成的点坐标
-	y=[]
-
-	#计算1区间
-	if dx>dy:
-
-		p=2*dy-dx
-		xi=x0
-		yi=k*y0
-		for xi in range(x0,x1+1):#只包含前者，不包含后者
-			x.append(xi)
-			y.append(k*yi)
-
-			#calculate next p
-			if p>0:
-				p=p+2*(dy-dx)
-				yi=yi+1
-		
-			else:
-				p=p+2*dy
-
-	#计算2区间
-	else:#斜率>1,dx dy交换,由y值递增循环
-
-		p=2*dx-dy
-		xi=x0
-		yi=k*y0
-		for yi in range(y0,y1+1):#只包含前者，不包含后者
-			x.append(xi)
-			y.append(k*yi)
-
-			#calculate next p
-			if p>0:
-				p=p+2*(dx-dy)
-				xi=xi+1
-		
-			else:
-				p=p+2*dx		
-
-	#plt_show(x,y)
-	return x,y
 
 def int_list(x):
 	y=[]
@@ -177,7 +112,7 @@ def get_four_point(x0,y0,x1,y1,width):
 	Y.append(y2_1)
 	X=int_list(X)
 	Y=int_list(Y)
-	print(X,Y)
+	# print(X,Y)
 
 	return X,Y
 
@@ -200,6 +135,11 @@ def seed_filling_algorithm(X,Y):
 	#flood_seed_algorithm_easy_stack(x_start,y_start,X,Y,x_offset,y_offset)
 	X,Y=flood_seed_algorithm_scan_stack(x_start,y_start,X,Y)
 	return X,Y
+
+def seed_filling_circle(R):
+	X,Y=bresenham_circle(R)
+	X,Y=flood_seed_algorithm_scan_stack(0,0,X,Y)
+	plt_show(X,Y)
 #边界填充算法  递归版，不行，会耗尽内存
 def flood_seed_algorithm_recursion(x,y,X,Y,x_offset,y_offset):
 		if is_in_list(x,y,X,Y)==False:#不是边界点
@@ -287,12 +227,12 @@ def getNewSeed(stack_x,stack_y,x_left,x_right,y,X,Y):
 			if is_in_list(tmp_x-1,y,X,Y)==False:
 				stack_x.push(tmp_x-1)
 				stack_y.push(y)
-				print("new seed1 x=",tmp_x-1," y=",y)
+				# print("new seed1 x=",tmp_x-1," y=",y)
 		tmp_x+=1
 	if is_in_list(tmp_x-1,y,X,Y)==False:#xright处的点也不是边界点
 		stack_x.push(tmp_x-1)
 		stack_y.push(y)
-		print("new seed2 x=",tmp_x-1," y=",y)
+		# print("new seed2 x=",tmp_x-1," y=",y)
 	return stack_x,stack_y
 
 #边界填充算法 边界扫描线算法
@@ -325,14 +265,15 @@ def bresenham_width(x0,y0,x1,y1,width):
 	X4,Y4=get_four_point(x0,y0,x1,y1,width)
 	X4.append(X4[0])
 	Y4.append(Y4[0])
-	print(X4,Y4)
+	# print("222")
+	# print(X4,Y4)
 	X=[]
 	Y=[]
 	for i in range(4):
 		#print("i=",i)
 		#print(X4[i],Y4[i],X4[i+1],Y4[i+1])
-		x,y=bresenham(X4[i],Y4[i],X4[i+1],Y4[i+1])
-		#print(x,y)
+		x,y=bresenham_check(X4[i],Y4[i],X4[i+1],Y4[i+1])
+		print(x,y)
 		for xi in x:
 			X.append(xi)
 			#X_all.append(xi)
@@ -340,18 +281,79 @@ def bresenham_width(x0,y0,x1,y1,width):
 			Y.append(yi)
 			#Y_all.append(yi)
 	#plt_show(X,Y)
+	print("11111")
 	
 	X,Y=seed_filling_algorithm(X,Y)
 	plt_show(X,Y)
 
-	
+#https://blog.csdn.net/sinat_41104353/article/details/82961824
+def bresenham_circle(R):
+	r=round(R)
+	x=0
+	y=r
+	p=3-2*r
+	X=[]
+	Y=[]
+	while x<=y:
+
+
+		X.append(x)#2
+		Y.append(y)
+		#画另外七个对称点
+		X.append(y)#1
+		Y.append(x)	
+
+		X.append(-x)#3
+		Y.append(y)
+
+		X.append(-y)#4
+		Y.append(x)
+
+		X.append(-y)#5
+		Y.append(-x)
+
+		X.append(-x)#6
+		Y.append(-y)
+
+		X.append(x)#7
+		Y.append(-y)
+
+		X.append(y)#8
+		Y.append(-x)
+
+		if p>=0:
+			p+=4*(x-y)+10
+			y-=1
+			x+=1
+		else:
+			p+=4*x+6
+			x+=1
+
+	# x_c=np.linspace(0,r,100)
+	# for i in range(len(x_c)):
+	# 	y_c=math.sqrt(r*r-x_c[i]*x_c[i])
+	# 	if y_c<x_c[i]:
+	# 		break
+	# 	X.append(x_c[i])
+	# 	Y.append(y_c)
+
+	# plt_show(X,Y)
+	return X,Y
+
+
+
+
 
 
 def bresenham_k_lessthan_1(x0,y0,x1,y1):
+	x0=round(x0)
+	x1=round(x1)
+	y0=round(y0)
+	y1=round(y1)
+
 	dx=x1-x0
 	dy=y1-y0
 
-	print(dx,dy)
 
 	x=[]
 	y=[]
@@ -374,37 +376,47 @@ def bresenham_k_lessthan_1(x0,y0,x1,y1):
 		else:
 			p=p+2*dy
 
-		print(p)
-	plt_show(x,y)
+	# plt_show(x,y)
+	return x,y
 
-'''
-#还有问题
-def BresenhamCircle(R):
-	X=[]
-	Y=[]
 
-	x=0 
-	y=R
-	p=3-2*R
-	for x in range(x,x+R+1):
-		X.append(x)
-		Y.append(y)
-		if p>=0:
-			p=p+4*(x-y)+10
-			y=y-1
-		
+def bresenham_check(x0,y0,x1,y1):
+	#将直线朝向为二三象限的点全部转换到一四象限
+	if x0>x1:
+		tmp=x0
+		x0=x1
+		x1=tmp
+		tmp=y1
+		y1=y0
+		y0=tmp	
+	dy=y1-y0
+	dx=x1-x0
+	if dy>0:#表示一象限
+		if abs(dx)>abs(dy):#第一象限斜率小于1部分
+			x,y= bresenham_k_lessthan_1(x0,y0,x1,y1)
+			# plt_show(x,y)
+			return x,y
 		else:
-			p=p+4*x+6;
+			#xy值互换
+			y,x=bresenham_k_lessthan_1(y0,x0,y1,x1)
+			# plt_show(x,y)
+			return x,y
+	else:#表示第四象限 dy<0
+		if abs(dx)>abs(dy):
+			x,y=bresenham_k_lessthan_1(x0,-1*y0,x1,-1*y1)
+			# print(len(x),len(y))
+			for i in range(len(y)):
+				y[i]=-1*y[i]
 
-	x_circle=np.linspace(0,R,100)
-	y_circle=((R*R)-(x_circle*x_circle))**0.5
-	plt.plot(x_circle,y_circle)
-	plt_show(X,Y)
-'''		
+			# plt_show(x,y)
+			return x,y
+		else:
+			y,x=bresenham_k_lessthan_1(-1*y0,x0,-1*y1,x1)
+			for i in range(len(y)):
+				y[i]=-1*y[i]
 
-
-
-
+			# plt_show(x,y)
+			return x,y
 
 def plt_show(x,y):
 	'''
@@ -444,7 +456,7 @@ def plt_show(x,y):
 	plt.show()
 
 if "__name==__main__":
-	#bresenham(-13,-13,13,13)  #斜率为-1不行，还得继续调试！！！！！！！！！！！！！！！
-	#BresenhamCircle(15)
-	bresenham_width(0,0,-27,10,8)
-	
+	# bresenham_check(0,0,10,-1)#都可以√√√√√√
+	# bresenham_circle(8)
+	# bresenham_width(0,0,100,100,8)
+	seed_filling_circle(30)
