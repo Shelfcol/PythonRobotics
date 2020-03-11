@@ -16,6 +16,17 @@ DCOST_TH = 0.1
 show_animation = True
 
 
+'''
+创建k个点作为起始质心（通常随机选择）
+当任意一个点的簇分配结果发生改变时：
+        对数据集中的每个点：
+                对每个质心：
+                计算质心与数据点之间的距离
+         将数据点分配到距离其最近的簇
+对每一个簇，计算簇中所有点的均值并将均值作为质心
+'''
+
+
 def kmeans_clustering(rx, ry, nc):
     clusters = Clusters(rx, ry, nc)
     clusters.calc_centroid()
@@ -37,13 +48,13 @@ def kmeans_clustering(rx, ry, nc):
 class Clusters:
 
     def __init__(self, x, y, n_label):
-        self.x = x
+        self.x = x#所有点的x值list
         self.y = y
-        self.n_data = len(self.x)
-        self.n_label = n_label
+        self.n_data = len(self.x)#点的总数
+        self.n_label = n_label#初始的cluster中心的数量
         self.labels = [random.randint(0, n_label - 1)
                        for _ in range(self.n_data)]
-        self.center_x = [0.0 for _ in range(n_label)]
+        self.center_x = [0.0 for _ in range(n_label)]#初始化中心点序列
         self.center_y = [0.0 for _ in range(n_label)]
 
     def plot_cluster(self):
@@ -125,8 +136,8 @@ def main():
         time += dt
 
         # objects moving simulation
-        cx, cy = update_positions(cx, cy)
-        raw_x, raw_y = calc_raw_data(cx, cy, n_points, rand_d)
+        cx, cy = update_positions(cx, cy)#每次更新两个聚类中心
+        raw_x, raw_y = calc_raw_data(cx, cy, n_points, rand_d)#在cx和cy周围分别生成n_points个点
 
         clusters = kmeans_clustering(raw_x, raw_y, n_cluster)
 

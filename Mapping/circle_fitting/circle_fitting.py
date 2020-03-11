@@ -4,6 +4,9 @@ Object shape recognition with circle fitting
 
 author: Atsushi Sakai (@Atsushi_twi)
 
+最小二乘拟合圆
+https://blog.csdn.net/sinat_21107433/article/details/80877704
+
 """
 
 import matplotlib.pyplot as plt
@@ -24,9 +27,9 @@ def circle_fitting(x, y):
                 error: prediction error
     """
 
-    sumx = sum(x)
+    sumx = sum(x)#横坐标之和
     sumy = sum(y)
-    sumx2 = sum([ix ** 2 for ix in x])
+    sumx2 = sum([ix ** 2 for ix in x])#每个x平方和
     sumy2 = sum([iy ** 2 for iy in y])
     sumxy = sum([ix * iy for (ix, iy) in zip(x, y)])
 
@@ -53,29 +56,34 @@ def get_sample_points(cx, cy, cr, angle_reso):
     x, y, angle, r = [], [], [], []
 
     # points sampling
-    for theta in np.arange(0.0, 2.0 * math.pi, angle_reso):
+    for theta in np.arange(0.0, 2.0 * math.pi, angle_reso):#遍历0-2π
         nx = cx + cr * math.cos(theta)
         ny = cy + cr * math.sin(theta)
         nangle = math.atan2(ny, nx)
-        nr = math.hypot(nx, ny) * random.uniform(0.95, 1.05)
+        nr = math.hypot(nx, ny) * random.uniform(0.95, 1.05)#0.95~1.05的随机值
 
-        x.append(nx)
+        x.append(nx)#圆上的点
         y.append(ny)
-        angle.append(nangle)
-        r.append(nr)
+        angle.append(nangle)#圆上点原点连线的角度
+        r.append(nr)#加了噪声的点到原点的距离
 
     # ray casting filter
     rx, ry = ray_casting_filter(x, y, angle, r, angle_reso)
 
     return rx, ry
 
+'''
+https://www.jianshu.com/p/ba03c600a557
+光线投射法判断点是否在多边形的内部：从这个点引出一根“射线”，与多边形的任意若干条边相交，累计相交的边的数目，如果是奇数，那么点就在多边形内，否则点就在多边形外。
+射线法的关键是正确计算  射线  与  每条边  是否相交。并且规定线段与射线重叠或者射线经过线段下端点属于不相交。首先排除掉不相交的情况
+'''
 
 def ray_casting_filter(xl, yl, thetal, rangel, angle_reso):
     rx, ry = [], []
     rangedb = [float("inf") for _ in range(
         int(math.floor((math.pi * 2.0) / angle_reso)) + 1)]
 
-    for i, _ in enumerate(thetal):
+    for i, _ in enumerate(thetal):#enumerate() 函数用于将一个可遍历的数据对象(如列表、元组或字符串)组合为一个索引序列，  同时列出   数据和数据下标，一般用在 for 循环当中
         angleid = math.floor(thetal[i] / angle_reso)
 
         if rangedb[angleid] > rangel[i]:

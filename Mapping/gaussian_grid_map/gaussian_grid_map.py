@@ -3,6 +3,8 @@
 2D gaussian grid map sample
 
 author: Atsushi Sakai (@Atsushi_twi)
+高斯栅格地图只是将每个栅格与障碍物的最近距离作为高斯分布的自变量，将每个栅格的概率都表示出来
+热图就是将不同的数值用不同的颜色表示出来，是一种可视化的手段
 
 """
 
@@ -22,20 +24,20 @@ def generate_gaussian_grid_map(ox, oy, xyreso, std):
 
     gmap = [[0.0 for i in range(yw)] for i in range(xw)]
 
-    for ix in range(xw):
+    for ix in range(xw):#遍历栅格地图的每个点
         for iy in range(yw):
 
-            x = ix * xyreso + minx
+            x = ix * xyreso + minx#将某个栅格的坐标转换为实际坐标
             y = iy * xyreso + miny
 
-            # Search minimum distance
+            # Search minimum distance 找出与这个栅格最近的障碍物点
             mindis = float("inf")
             for (iox, ioy) in zip(ox, oy):
                 d = math.hypot(iox - x, ioy - y)
                 if mindis >= d:
                     mindis = d
-
-            pdf = (1.0 - norm.cdf(mindis, 0.0, std))
+            #距离障碍物越近，pdf越小
+            pdf = (1.0 - norm.cdf(mindis, 0.0, std))#norm.cdf(x,μ，σ) 返回x处的正太分布函数值，这里即设置了一个x~（μ，σ)的正太分布，这里得到的是这个栅格与观测点实际距离与测量得到的距离之差的绝对值在这个正态分布里面的概率值
             gmap[ix][iy] = pdf
 
     return gmap, minx, maxx, miny, maxy
