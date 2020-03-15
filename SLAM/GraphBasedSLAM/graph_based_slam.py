@@ -10,6 +10,12 @@ Ref
 
 """
 
+'''
+https://blog.csdn.net/heyijia0327/article/details/47686523
+信息矩阵就是边的权重
+'''
+
+
 import numpy as np
 import math
 import copy
