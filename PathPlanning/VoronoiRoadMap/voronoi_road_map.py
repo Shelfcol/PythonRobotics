@@ -75,7 +75,7 @@ class KDTree:
 
 def VRM_planning(sx, sy, gx, gy, ox, oy, rr):
 
-    obkdtree = KDTree(np.vstack((ox, oy)).T)
+    obkdtree = KDTree(np.vstack((ox, oy)).T)#建立一个障碍物的树来搜索障碍物的最近点
 
     sample_x, sample_y = sample_points(sx, sy, gx, gy, rr, ox, oy, obkdtree)
     if show_animation:  # pragma: no cover

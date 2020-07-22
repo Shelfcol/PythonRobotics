@@ -429,13 +429,13 @@ def main():
     for i in range(40):
         ox.append(20.0)
         oy.append(i)
-    for i in range(40):
-        ox.append(40.0)
+    for i in range(50):
+        ox.append(45.0)
         oy.append(60.0 - i)
 
     # Set Initial parameters
-    start = [10.0, 10.0, np.deg2rad(90.0)]
-    goal = [50.0, 50.0, np.deg2rad(-90.0)]
+    start = [10.0, 10.0, np.deg2rad(50.0)]
+    goal = [50.0, 50.0, np.deg2rad(-80.0)]
 
     plt.plot(ox, oy, ".k")
     rs.plot_arrow(start[0], start[1], start[2], fc='g')
@@ -458,7 +458,8 @@ def main():
         plt.grid(True)
         plt.axis("equal")
         plot_car(ix, iy, iyaw)
-        plt.pause(0.0001)
+        plt.pause(0.00001)
+
 
     print(__file__ + " done!!")
 

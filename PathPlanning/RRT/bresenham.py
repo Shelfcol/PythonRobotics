@@ -1,11 +1,11 @@
-#https://blog.csdn.net/ShenDW818/article/details/88669209?utm_source=distribute.pc_relevant.none-task
-#https://zhuanlan.zhihu.com/p/106155534有部分有问题 dy没有取绝对值
+
 import matplotlib.pyplot as plt
 from matplotlib.pyplot import MultipleLocator
 import numpy as np
 import math
 #从pyplot导入MultipleLocator类，这个类用于设置刻度间隔
-
+#https://blog.csdn.net/ShenDW818/article/details/88669209?utm_source=distribute.pc_relevant.none-task
+#https://zhuanlan.zhihu.com/p/106155534有部分有问题 dy没有取绝对值
 #保存xy坐标点的list全局变量
 global X_all
 global Y_all
@@ -458,5 +458,5 @@ def plt_show(x,y):
 if "__name==__main__":
 	# bresenham_check(0,0,10,-1)#都可以√√√√√√
 	# bresenham_circle(8)
-	# bresenham_width(0,0,100,100,8)
-	seed_filling_circle(30)
+	bresenham_width(0,0,-5,10,8)
+	# seed_filling_circle(30)

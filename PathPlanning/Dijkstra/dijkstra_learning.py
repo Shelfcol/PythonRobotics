@@ -64,7 +64,7 @@ class Dijkstra:
 		return (y_index-self.y_grid_origin)*self.width+x_index-self.x_grid_origin
 
 	def cal_real_xy(self,x_index,y_index):
-		x=float(x_index*self.reso)
+		x=float(x_index*self.reso)#应该还需要减去offset
 		y=float(y_index*self.reso)
 		return x,y
 
